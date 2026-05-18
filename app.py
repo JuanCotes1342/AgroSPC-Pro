@@ -948,7 +948,9 @@ def page_pareto() -> None:
             st.session_state.pareto_df = pd.DataFrame({"Categoria": [], "Frecuencia": []})
             st.rerun()
         edited = st.data_editor(st.session_state.pareto_df, num_rows="dynamic", use_container_width=True, height=300, key="pareto_editor")
-        st.session_state.pareto_df = edited
+        if not edited.equals(st.session_state.pareto_df):
+            st.session_state.pareto_df = edited
+            st.rerun()
 
     st.subheader("Diagrama de Causa-Efecto (Ishikawa)")
     st.markdown("<div class='chart-panel'>", unsafe_allow_html=True)
