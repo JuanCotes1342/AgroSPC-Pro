@@ -15,7 +15,13 @@ ORANGE = "#f59e0b"
 
 
 def control_chart(df: pd.DataFrame, metric: str, cl: str, ucl: str, lcl: str, title: str, lsl: float | None = None, usl: float | None = None) -> go.Figure:
-    colors = np.where((df[metric] > df[ucl]) | (df[metric] < df[lcl]), RED, BLUE)
+    out_control = (df[metric] > df[ucl]) | (df[metric] < df[lcl])
+    out_spec = pd.Series(False, index=df.index)
+    if lsl is not None and np.isfinite(lsl):
+        out_spec = out_spec | (df[metric] < lsl)
+    if usl is not None and np.isfinite(usl):
+        out_spec = out_spec | (df[metric] > usl)
+    colors = np.where(out_control | out_spec, RED, BLUE)
     fig = go.Figure()
     fig.add_trace(go.Scatter(x=df["Subgrupo"], y=df[metric], mode="lines+markers", marker=dict(color=colors, size=9), line=dict(color=BLUE), name=metric))
     fig.add_trace(go.Scatter(x=df["Subgrupo"], y=df[ucl], mode="lines", line=dict(color=RED, dash="dash"), name="UCL"))

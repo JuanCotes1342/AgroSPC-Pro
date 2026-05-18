@@ -87,6 +87,12 @@ PRODUCT_SUGGESTIONS = {
     "Melon": ["Peso fresco", "Grados Brix", "Diametro", "Firmeza", "Presencia de manchas"],
     "Cilantro": ["Peso fresco", "Longitud de hojas", "Humedad", "Aroma caracteristico", "Nivel de limpieza"],
     "Aji topito": ["Peso fresco", "Diametro", "Color", "Grados Brix", "Danos por plagas"],
+    "Tomate": ["Diametro", "Firmeza", "Color", "Grados Brix", "Frutos con pudricion"],
+    "Lechuga": ["Peso fresco", "Diametro", "Color", "Humedad", "Hojas amarillas"],
+    "Pina": ["Peso fresco", "Grados Brix", "pH", "Firmeza", "Golpes o magulladuras"],
+    "Papaya": ["Peso fresco", "Grados Brix", "Firmeza", "Color", "Madurez no uniforme"],
+    "Romero": ["Contenido de aceites esenciales", "Humedad", "Principios activos", "Aroma caracteristico", "Material extrano"],
+    "Menta": ["Concentracion de mentol", "Contenido de aceites esenciales", "Humedad", "Longitud de hojas", "Aroma caracteristico"],
 }
 
 PRODUCT_DESCRIPTIONS = {
@@ -97,6 +103,12 @@ PRODUCT_DESCRIPTIONS = {
     "Aguacate": "Fruta de alto valor comercial donde la materia seca, firmeza, calibre, peso y ausencia de danos mecanicos son decisivos para cosecha, exportacion y maduracion controlada.",
     "Banano": "Fruta climatérica cuyo control se centra en peso, color, firmeza, grados Brix, madurez y golpes. Estos indicadores ayudan a gestionar cosecha, transporte y vida poscosecha.",
     "Cilantro": "Hortaliza aromatica sensible a humedad, limpieza y deterioro. Sus controles de calidad incluyen peso fresco, longitud de hojas, aroma, presencia de plagas y nivel de limpieza.",
+    "Tomate": "Hortaliza/fruto de alta rotacion donde firmeza, calibre, color, solidos solubles y sanidad definen aceptacion comercial, vida util y desempeno en empaque.",
+    "Lechuga": "Hortaliza de hoja muy sensible a deshidratacion, danos mecanicos y contaminacion. El SPC ayuda a controlar frescura, peso, color, limpieza y descarte por hojas deterioradas.",
+    "Pina": "Fruta tropical procesada y fresca donde Brix, pH, firmeza, calibre y danos por manejo determinan dulzor, estabilidad y categoria comercial.",
+    "Papaya": "Fruta climatérica sensible a madurez, firmeza y golpes. El control de calidad permite separar lotes por estado de consumo, exportacion o procesamiento.",
+    "Romero": "Planta aromatica usada en extractos, aceites e infusiones. La calidad depende de humedad, aceite esencial, aroma, pureza y ausencia de material extrano.",
+    "Menta": "Planta aromatica cuyo valor esta asociado a mentol, aroma, color y frescura. El control estadistico ayuda a estabilizar cosecha, secado y recepcion de materia prima.",
 }
 PRODUCT_ATTRIBUTES = {
     "Valeriana": [
@@ -140,6 +152,24 @@ PRODUCT_ATTRIBUTES = {
         {"Atributo": "Presencia de tierra", "Evaluacion": "Si / No", "Descripcion": "Defecto de limpieza", "Herramienta": "p"},
         {"Atributo": "Tallos marchitos", "Evaluacion": "Aceptable / No aceptable", "Descripcion": "Indicador de deshidratacion", "Herramienta": "p"},
         {"Atributo": "Aroma no caracteristico", "Evaluacion": "Conforme / No conforme", "Descripcion": "Perdida sensorial o contaminacion", "Herramienta": "p"},
+    ],
+    "Tomate": [
+        {"Atributo": "Frutos rajados", "Evaluacion": "Conteo", "Descripcion": "Dano fisico que acelera deterioro", "Herramienta": "c / u"},
+        {"Atributo": "Color no uniforme", "Evaluacion": "Aceptable / No aceptable", "Descripcion": "Madurez heterogenea del lote", "Herramienta": "p"},
+        {"Atributo": "Pudricion apical", "Evaluacion": "Si / No", "Descripcion": "Defecto fisiologico de alto rechazo", "Herramienta": "p"},
+        {"Atributo": "Danos por plagas", "Evaluacion": "Conforme / No conforme", "Descripcion": "Afectacion visible por insectos", "Herramienta": "p / np"},
+    ],
+    "Lechuga": [
+        {"Atributo": "Hojas quemadas", "Evaluacion": "Conteo", "Descripcion": "Deterioro de borde o deshidratacion", "Herramienta": "c / u"},
+        {"Atributo": "Presencia de tierra", "Evaluacion": "Si / No", "Descripcion": "Defecto de lavado o cosecha", "Herramienta": "p"},
+        {"Atributo": "Marchitez", "Evaluacion": "Aceptable / No aceptable", "Descripcion": "Perdida de frescura comercial", "Herramienta": "p"},
+        {"Atributo": "Hojas con insectos", "Evaluacion": "Conteo", "Descripcion": "Riesgo sanitario y rechazo visual", "Herramienta": "c"},
+    ],
+    "Pina": [
+        {"Atributo": "Corona deteriorada", "Evaluacion": "Conforme / No conforme", "Descripcion": "Afecta presentacion y vida util", "Herramienta": "p"},
+        {"Atributo": "Golpes en cascara", "Evaluacion": "Conteo", "Descripcion": "Dano por transporte o apilamiento", "Herramienta": "c / u"},
+        {"Atributo": "Fermentacion visible", "Evaluacion": "Si / No", "Descripcion": "Senal de sobremadurez o dano interno", "Herramienta": "p"},
+        {"Atributo": "Calibre fuera de especificacion", "Evaluacion": "Conforme / No conforme", "Descripcion": "No cumple categoria comercial", "Herramienta": "p / np"},
     ],
 }
 

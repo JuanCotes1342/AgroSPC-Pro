@@ -290,6 +290,32 @@ def spec_limits() -> tuple[float | None, float | None]:
     return lsl_f, usl_f
 
 
+def spec_violations(values: pd.Series, lsl: float | None, usl: float | None) -> int:
+    values = pd.to_numeric(values, errors="coerce").dropna()
+    if lsl is None and usl is None:
+        return 0
+    mask = pd.Series(False, index=values.index)
+    if lsl is not None:
+        mask = mask | (values < lsl)
+    if usl is not None:
+        mask = mask | (values > usl)
+    return int(mask.sum())
+
+
+def specification_note(count: int, unit: str = "") -> str:
+    if count <= 0:
+        return "Sin puntos fuera de especificacion."
+    suffix = f" {unit}" if unit else ""
+    return f"{count} punto(s) fuera de LIE/LSE{suffix}. Esto indica incumplimiento de especificacion aunque el proceso pueda estar estadisticamente estable."
+
+
+def variable_specification_note(subgroup_count: int, measurement_count: int, unit: str = "") -> str:
+    if subgroup_count <= 0 and measurement_count <= 0:
+        return "Sin puntos ni mediciones fuera de especificacion."
+    suffix = f" {unit}" if unit else ""
+    return f"{subgroup_count} media(s) de subgrupo y {measurement_count} medicion(es) individuales fuera de LIE/LSE{suffix}. Esto indica incumplimiento de especificacion aunque el proceso pueda estar estadisticamente estable."
+
+
 def upload_dataframe(key: str) -> None:
     lang = st.session_state.lang
     uploaded = st.file_uploader("Importar Excel/CSV" if lang == "es" else "Import Excel/CSV", type=["xlsx", "csv"], key=f"upload_{key}")
@@ -476,6 +502,7 @@ Actua como experto senior en control estadistico de procesos agroindustriales.
 Idioma: {'espanol' if lang == 'es' else 'english'}.
 Producto y trazabilidad: {st.session_state.metadata}.
 Estadistica descriptiva: {stats_dict}.
+Nota de conteo: en cartas de control, subgrupos/puntos del grafico son filas evaluadas; mediciones totales es el total de datos individuales usados para estadistica descriptiva. No confundas ambos conteos.
 Alertas Western Electric: {alerts}.
 Capacidad: {cap}.
 Normalidad: {norm}.
@@ -686,9 +713,13 @@ def page_variables() -> None:
     lsl_spec, usl_spec = spec_limits()
     cap = capability(values, lsl_spec, usl_spec)
     signal_count = int(result["Fuera_Xbar"].sum())
-    status = t("out_control", lang) if signal_count else t("in_control", lang)
-    note = f"Carta {chart_type}: monitorea la media de cada subgrupo y la variabilidad del proceso. Se estan evaluando {len(result)} subgrupos y {stats_dict['count']} mediciones totales."
-    process_summary_panel(stats_dict, status, signal_count, note, cap=cap)
+    spec_count = spec_violations(result["Xbar"], lsl_spec, usl_spec)
+    measurement_spec_count = spec_violations(values, lsl_spec, usl_spec)
+    total_spec_count = spec_count + measurement_spec_count
+    status = t("out_control", lang) if signal_count else ("Fuera de especificacion" if total_spec_count else t("in_control", lang))
+    spec_note = variable_specification_note(spec_count, measurement_spec_count, st.session_state.metadata.get('Unidad', ''))
+    note = f"Carta {chart_type}: monitorea la media de cada subgrupo y la variabilidad del proceso. Se estan evaluando {len(result)} subgrupos y {stats_dict['count']} mediciones totales. {spec_note}"
+    process_summary_panel(stats_dict, status, signal_count + total_spec_count, note, cap=cap)
     lsl = lsl_spec if st.session_state.show_spec_limits else None
     usl = usl_spec if st.session_state.show_spec_limits else None
     if chart_type == "Xbar-R":
@@ -706,6 +737,8 @@ def page_variables() -> None:
         st.plotly_chart(control_chart(result, "S", "cl_s", "ucl_s", "lcl_s", "Grafico de Control - Desviacion (S)"), use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
     alerts = western_electric(result["Xbar"], result["cl_x"].iloc[0], result["ucl_x"].iloc[0], result["lcl_x"].iloc[0])
+    if total_spec_count:
+        alerts.append(spec_note)
     status_box(not any("fuera" in a.lower() for a in alerts), "<br>".join(alerts))
     show_assistant(descriptive_stats(flatten_numeric(st.session_state.variable_df)), alerts)
     st.dataframe(result, use_container_width=True)
@@ -792,17 +825,18 @@ def page_attributes() -> None:
     elif chart in ["c", "u"] and "Defectos" in df.columns:
         defect_count = int(pd.to_numeric(df["Defectos"], errors="coerce").fillna(0).sum())
     signal_count = int(result["Fuera"].sum())
-    status = t("out_control", lang) if signal_count else t("in_control", lang)
-    note = f"Carta {chart}: {chart_explain[chart]} Se estan evaluando {len(result)} subgrupos."
-    process_summary_panel(stats_dict, status, signal_count, note, defect_count=defect_count)
-    metric = chart
     attr_lsl_base, attr_usl_base = spec_limits()
+    spec_count = spec_violations(result[chart], attr_lsl_base, attr_usl_base)
+    status = t("out_control", lang) if signal_count else ("Fuera de especificacion" if spec_count else t("in_control", lang))
+    note = f"Carta {chart}: {chart_explain[chart]} Se estan evaluando {len(result)} subgrupos. {specification_note(spec_count)}"
+    process_summary_panel(stats_dict, status, signal_count + spec_count, note, defect_count=defect_count)
+    metric = chart
     attr_lsl = attr_lsl_base if show_attr_specs else None
     attr_usl = attr_usl_base if show_attr_specs else None
     st.markdown("<div class='chart-panel'>", unsafe_allow_html=True)
     st.plotly_chart(control_chart(result, metric, "CL", "UCL", "LCL", f"Grafico de Control de Atributos - Carta {chart}", attr_lsl, attr_usl), use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
-    status_box(not result["Fuera"].any(), f"Puntos fuera de control: {int(result['Fuera'].sum())}")
+    status_box(not result["Fuera"].any() and spec_count == 0, f"Puntos fuera de control: {int(result['Fuera'].sum())}<br>{specification_note(spec_count)}")
     st.dataframe(result, use_container_width=True)
 
 
@@ -1007,30 +1041,6 @@ def page_reports() -> None:
         st.write(f"• {item}")
     pdf = pdf_report("Reporte SPC Agroindustrial", st.session_state.metadata, conclusions, control)
     st.download_button("Descargar PDF", pdf, "reporte_spc.pdf", "application/pdf")
-
-    st.divider()
-    deliverable = st.selectbox("Entregable IA", ["Informe tecnico", "Manual de usuario", "Presentacion PowerPoint", "Guion de video demostrativo"])
-    if st.button("Generar entregable", type="primary"):
-        base_context = f"""
-Proyecto: Aplicacion de Control Estadistico de Calidad para frutas, hortalizas y plantas medicinales.
-Rubrica: herramientas estadisticas 25%, funcionamiento 20%, interfaz 15%, analisis 15%, informe 10%, sustentacion 15%.
-Trazabilidad: {st.session_state.metadata}
-Estadistica: {stats_dict}
-Capacidad: {cap}
-Normalidad: {normality_tests(values)}
-Alertas SPC: {alerts}
-Catalogo usado: productos agroindustriales, variables continuas, atributos, BPA, BPM, ISO 9001, ISO 22000, INVIMA, OMS.
-"""
-        prompt = f"""
-Genera un {deliverable} profesional en espanol para una sustentacion universitaria y demostracion empresarial.
-Debe ser claro, tecnicamente riguroso, sin inventar datos fuera del contexto, e incluir conclusiones y recomendaciones.
-{base_context}
-"""
-        fallback = f"# {deliverable}\n\nIntroduccion: sistema SPC agroindustrial para registrar, analizar y visualizar datos de calidad.\n\nMetodologia: captura de datos, estadistica descriptiva, normalidad, graficos de control, capacidad y Pareto.\n\nResultados: revisar dashboard, alertas SPC y capacidad.\n\nConclusiones: {', '.join(conclusions)}"
-        text, source = generate_text(prompt, fallback, temperature=0.45)
-        st.caption(f"Fuente: {source}")
-        st.markdown(text)
-        st.download_button("Descargar TXT", text.encode("utf-8"), f"{deliverable.lower().replace(' ', '_')}.txt", "text/plain")
 
 
 def page_export() -> None:

@@ -113,7 +113,7 @@ def apply_theme() -> None:
         .page-top h2 { margin:0; color:#172033; font-size:1.45rem; font-weight:900; letter-spacing:-.02em; }
         .page-top p { margin:.25rem 0 0; color:#64748b; font-size:.9rem; }
         .page-actions { display:flex; gap:.55rem; align-items:center; }
-        .topbar-chip { padding:.55rem .85rem; border-radius:10px; background:white; border:1px solid #dfe7df; color:#234f2c; font-weight:750; box-shadow:0 8px 18px rgba(47,111,62,.08); }
+        .topbar-chip { padding:.55rem .85rem; border-radius:10px; background:white; border:1px solid #dfe7df; color:#234f2c !important; font-weight:750; box-shadow:0 8px 18px rgba(47,111,62,.08); text-decoration:none !important; }
         .soft-page { padding:1rem; border-radius:22px; background:#eef8f3; border:1px solid #dff1e8; }
         .form-card { padding:1.1rem; border-radius:18px; background:white; border:1px solid #e5edf7; box-shadow:0 10px 28px rgba(15,76,129,.06); margin-bottom:1rem; }
         .info-strip { padding:.85rem 1rem; border-radius:12px; background:#dbeafe; border:1px solid #bfdbfe; color:#17446d; margin:.8rem 0 1rem; }
@@ -148,7 +148,7 @@ def page_header(title: str, subtitle: str) -> None:
         f"""
         <div class='page-top'>
             <div><h2>{title}</h2><p>{subtitle}</p></div>
-            <div class='page-actions'><span class='topbar-chip'>+ Nuevo Registro</span><span class='topbar-chip'>⬇ Exportar</span></div>
+            <div class='page-actions'><a class='topbar-chip' href='?go=data_entry' target='_self'>+ Nuevo Registro</a><a class='topbar-chip' href='?go=export' target='_self'>⬇ Exportar</a></div>
         </div>
         """,
         unsafe_allow_html=True,
