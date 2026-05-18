@@ -11,7 +11,7 @@ import streamlit.components.v1 as components
 from charts.plots import control_chart, histogram_capability, normality_figure, pareto_chart
 from charts.ishikawa_svg import ishikawa_html, ishikawa_svg
 from components.ui import apply_theme, hero, kpi_card, page_header, status_box
-from database.db import delete_analysis, init_db, list_analyses, load_analysis, save_analysis
+from database.db import dataframe_from_json, dataframe_to_json, delete_analysis, init_db, list_analyses, load_analysis, save_temp_analysis
 from reports.exporters import csv_bytes, excel_bytes, pdf_report
 from utils.ai_client import deepseek_available, gemini_available, generate_text
 from utils.assistant import ai_assistant_summary, capability_text
@@ -49,6 +49,7 @@ def init_state() -> None:
     st.session_state.setdefault("ui_theme", "Light")
     st.session_state.setdefault("auto_rerun", False)
     st.session_state.setdefault("gemini_api_key", "")
+    st.session_state.setdefault("session_code", "demo-agrospc")
     st.session_state.setdefault("show_spec_limits", True)
     st.session_state.setdefault("variable_df", variable_example(30, 15))
     st.session_state.setdefault("attribute_df", attribute_example(25))
@@ -314,6 +315,26 @@ def variable_specification_note(subgroup_count: int, measurement_count: int, uni
         return "Sin puntos ni mediciones fuera de especificacion."
     suffix = f" {unit}" if unit else ""
     return f"{subgroup_count} media(s) de subgrupo y {measurement_count} medicion(es) individuales fuera de LIE/LSE{suffix}. Esto indica incumplimiento de especificacion aunque el proceso pueda estar estadisticamente estable."
+
+
+def current_analysis_payload() -> dict:
+    return {
+        "metadata": st.session_state.metadata,
+        "variable_df": dataframe_to_json(st.session_state.variable_df),
+        "attribute_df": dataframe_to_json(st.session_state.attribute_df),
+        "pareto_df": dataframe_to_json(st.session_state.pareto_df),
+        "ishikawa_effect": st.session_state.ishikawa_effect,
+        "ishikawa_causes": st.session_state.ishikawa_causes,
+    }
+
+
+def restore_analysis_payload(payload: dict) -> None:
+    st.session_state.metadata = payload.get("metadata", st.session_state.metadata)
+    st.session_state.variable_df = dataframe_from_json(payload.get("variable_df", "[]"))
+    st.session_state.attribute_df = dataframe_from_json(payload.get("attribute_df", "[]"))
+    st.session_state.pareto_df = dataframe_from_json(payload.get("pareto_df", "[]"))
+    st.session_state.ishikawa_effect = payload.get("ishikawa_effect", st.session_state.ishikawa_effect)
+    st.session_state.ishikawa_causes = payload.get("ishikawa_causes", st.session_state.ishikawa_causes)
 
 
 def upload_dataframe(key: str) -> None:
@@ -694,10 +715,17 @@ def page_data_entry() -> None:
     with tab2:
         upload_dataframe("attribute_df")
         spreadsheet("attribute_df", 3)
+    st.divider()
+    st.subheader("Guardar analisis temporal")
+    st.caption("Usa un codigo de sesion para recuperar este analisis durante 7 dias en esta instalacion de Streamlit.")
+    st.session_state.session_code = st.text_input("Codigo de sesion", value=st.session_state.session_code, key="entry_session_code").strip().lower()
     name = st.text_input("Nombre del analisis temporal", f"{st.session_state.metadata.get('Producto','Analisis')} - {datetime.now():%Y-%m-%d %H:%M}")
     if st.button(t("save_analysis", st.session_state.lang), type="primary"):
-        save_analysis(name, st.session_state.metadata, st.session_state.variable_df)
-        st.success("Analisis guardado temporalmente.")
+        if not st.session_state.session_code:
+            st.error("Escribe un codigo de sesion para guardar y recuperar el analisis.")
+        else:
+            save_temp_analysis(st.session_state.session_code, name, current_analysis_payload())
+            st.success("Analisis guardado temporalmente por 7 dias.")
 
 
 def page_variables() -> None:
@@ -1096,20 +1124,32 @@ def page_settings() -> None:
 
     st.divider()
     st.subheader("Analisis temporales" if lang == "es" else "Temporary analyses")
-    analyses = list_analyses()
-    st.dataframe(analyses, use_container_width=True)
+    st.caption("SQLite guarda estos datos en `database/spc_quality.db`. En Streamlit Cloud funciona para demo, pero el disco puede reiniciarse." if lang == "es" else "SQLite stores this data in `database/spc_quality.db`. On Streamlit Cloud it works for demos, but storage may reset.")
+    st.session_state.session_code = st.text_input("Codigo de sesion" if lang == "es" else "Session code", value=st.session_state.session_code, key="settings_session_code").strip().lower()
+    csave1, csave2 = st.columns([2, 1])
+    temp_name = csave1.text_input("Nombre para guardar" if lang == "es" else "Save name", f"{st.session_state.metadata.get('Producto','Analisis')} - {datetime.now():%Y-%m-%d %H:%M}")
+    if csave2.button("Guardar estado actual" if lang == "es" else "Save current state", type="primary", use_container_width=True):
+        if not st.session_state.session_code:
+            st.error("Escribe un codigo de sesion." if lang == "es" else "Enter a session code.")
+        else:
+            save_temp_analysis(st.session_state.session_code, temp_name, current_analysis_payload())
+            st.success("Analisis guardado por 7 dias." if lang == "es" else "Analysis saved for 7 days.")
+
+    analyses = list_analyses(st.session_state.session_code) if st.session_state.session_code else pd.DataFrame()
+    st.dataframe(analyses, use_container_width=True, hide_index=True)
     if not analyses.empty:
         selected = st.selectbox("Seleccionar ID", analyses["id"].tolist())
         c1, c2 = st.columns(2)
         if c1.button("Recuperar"):
-            md, df = load_analysis(int(selected))
-            st.session_state.metadata = md
-            st.session_state.variable_df = df
+            payload = load_analysis(int(selected), st.session_state.session_code)
+            restore_analysis_payload(payload)
             st.success("Analisis recuperado.")
+            st.rerun()
         if c2.button("Borrar"):
-            delete_analysis(int(selected))
-            st.success("Analisis borrado. Recarga la pagina para actualizar la tabla.")
-    st.caption("No hay login ni roles: cualquier usuario local puede usar el servicio, segun lo solicitado.")
+            delete_analysis(int(selected), st.session_state.session_code)
+            st.success("Analisis borrado.")
+            st.rerun()
+    st.caption("No hay login ni roles: quien conozca el codigo de sesion puede recuperar esos analisis temporales." if lang == "es" else "No login or roles: anyone with the session code can recover those temporary analyses.")
 
 
 def main() -> None:
