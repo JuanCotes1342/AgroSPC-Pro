@@ -22,4 +22,4 @@ COPY . .
 
 EXPOSE 8080
 
-CMD ["python", "-m", "streamlit", "run", "app.py", "--server.address=0.0.0.0", "--server.port=8080", "--server.headless=true", "--browser.gatherUsageStats=false"]
+CMD ["sh", "-c", "unset STREAMLIT_SERVER_PORT; python -m streamlit run app.py --server.address=0.0.0.0 --server.port=8080 --server.headless=true --browser.gatherUsageStats=false"]

@@ -23,6 +23,15 @@ GEMINI_API_KEY=tu_api_key_de_gemini_opcional
 
 `DEEPSEEK_API_KEY` es la principal. `GEMINI_API_KEY` es opcional como respaldo.
 
+No agregues estas variables:
+
+```text
+PORT
+STREAMLIT_SERVER_PORT
+```
+
+Si existen y alguna tiene valor `$PORT`, borralas. El contenedor usa internamente el puerto `8080`.
+
 ## 3. Deploy
 
 Railway usara el `Dockerfile` del repositorio e instalara `requirements.txt`.
