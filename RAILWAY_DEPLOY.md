@@ -30,7 +30,9 @@ PORT
 STREAMLIT_SERVER_PORT
 ```
 
-Si existen y alguna tiene valor `$PORT`, borralas. El contenedor usa internamente el puerto `8080`.
+Si existen y alguna tiene valor `$PORT`, borralas. El contenedor usa internamente el puerto `8080` y ademas limpia `STREAMLIT_SERVER_PORT` al iniciar para evitar ese error.
+
+Tambien revisa `Settings > Deploy > Start Command`: debe estar vacio. Railway debe usar el `Dockerfile` del repositorio.
 
 ## 3. Deploy
 
