@@ -310,11 +310,11 @@ def specification_note(count: int, unit: str = "") -> str:
     return f"{count} punto(s) fuera de LIE/LSE{suffix}. Esto indica incumplimiento de especificacion aunque el proceso pueda estar estadisticamente estable."
 
 
-def variable_specification_note(subgroup_count: int, measurement_count: int, unit: str = "") -> str:
-    if subgroup_count <= 0 and measurement_count <= 0:
-        return "Sin puntos ni mediciones fuera de especificacion."
+def variable_specification_note(subgroup_count: int, unit: str = "") -> str:
+    if subgroup_count <= 0:
+        return "Sin medias de subgrupo fuera de especificacion."
     suffix = f" {unit}" if unit else ""
-    return f"{subgroup_count} media(s) de subgrupo y {measurement_count} medicion(es) individuales fuera de LIE/LSE{suffix}. Esto indica incumplimiento de especificacion aunque el proceso pueda estar estadisticamente estable."
+    return f"{subgroup_count} media(s) de subgrupo fuera de LIE/LSE{suffix}. Esto indica incumplimiento de especificacion aunque el proceso pueda estar estadisticamente estable."
 
 
 def current_analysis_payload() -> dict:
@@ -742,12 +742,10 @@ def page_variables() -> None:
     cap = capability(values, lsl_spec, usl_spec)
     signal_count = int(result["Fuera_Xbar"].sum())
     spec_count = spec_violations(result["Xbar"], lsl_spec, usl_spec)
-    measurement_spec_count = spec_violations(values, lsl_spec, usl_spec)
-    total_spec_count = spec_count + measurement_spec_count
-    status = t("out_control", lang) if signal_count else ("Fuera de especificacion" if total_spec_count else t("in_control", lang))
-    spec_note = variable_specification_note(spec_count, measurement_spec_count, st.session_state.metadata.get('Unidad', ''))
+    status = t("out_control", lang) if signal_count else ("Fuera de especificacion" if spec_count else t("in_control", lang))
+    spec_note = variable_specification_note(spec_count, st.session_state.metadata.get('Unidad', ''))
     note = f"Carta {chart_type}: monitorea la media de cada subgrupo y la variabilidad del proceso. Se estan evaluando {len(result)} subgrupos y {stats_dict['count']} mediciones totales. {spec_note}"
-    process_summary_panel(stats_dict, status, signal_count + total_spec_count, note, cap=cap)
+    process_summary_panel(stats_dict, status, signal_count + spec_count, note, cap=cap)
     lsl = lsl_spec if st.session_state.show_spec_limits else None
     usl = usl_spec if st.session_state.show_spec_limits else None
     if chart_type == "Xbar-R":
@@ -765,7 +763,7 @@ def page_variables() -> None:
         st.plotly_chart(control_chart(result, "S", "cl_s", "ucl_s", "lcl_s", "Grafico de Control - Desviacion (S)"), use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
     alerts = western_electric(result["Xbar"], result["cl_x"].iloc[0], result["ucl_x"].iloc[0], result["lcl_x"].iloc[0])
-    if total_spec_count:
+    if spec_count:
         alerts.append(spec_note)
     status_box(not any("fuera" in a.lower() for a in alerts), "<br>".join(alerts))
     show_assistant(descriptive_stats(flatten_numeric(st.session_state.variable_df)), alerts)
@@ -864,7 +862,9 @@ def page_attributes() -> None:
     st.markdown("<div class='chart-panel'>", unsafe_allow_html=True)
     st.plotly_chart(control_chart(result, metric, "CL", "UCL", "LCL", f"Grafico de Control de Atributos - Carta {chart}", attr_lsl, attr_usl), use_container_width=True)
     st.markdown("</div>", unsafe_allow_html=True)
-    status_box(not result["Fuera"].any() and spec_count == 0, f"Puntos fuera de control: {int(result['Fuera'].sum())}<br>{specification_note(spec_count)}")
+    attr_alerts = [f"Puntos fuera de control: {int(result['Fuera'].sum())}", specification_note(spec_count)]
+    status_box(not result["Fuera"].any() and spec_count == 0, "<br>".join(attr_alerts))
+    show_assistant(stats_dict, attr_alerts)
     st.dataframe(result, use_container_width=True)
 
 
