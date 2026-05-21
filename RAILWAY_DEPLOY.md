@@ -30,10 +30,10 @@ Railway usara el `Dockerfile` del repositorio e instalara `requirements.txt`.
 El comando de arranque esta en el `Dockerfile`:
 
 ```bash
-streamlit run app.py --server.address 0.0.0.0 --server.port ${PORT:-8501}
+python -m streamlit run app.py --server.address=0.0.0.0 --server.port=8080 --server.headless=true --browser.gatherUsageStats=false
 ```
 
-No crees una variable `PORT` manualmente. Railway la asigna solo.
+El contenedor expone el puerto `8080`. Si Railway pide puerto al generar dominio, usa `8080`.
 
 ## 4. Generar URL publica
 
