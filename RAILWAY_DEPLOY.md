@@ -25,13 +25,15 @@ GEMINI_API_KEY=tu_api_key_de_gemini_opcional
 
 ## 3. Deploy
 
-Railway detectara Python con Nixpacks e instalara `requirements.txt`.
+Railway usara el `Dockerfile` del repositorio e instalara `requirements.txt`.
 
-El comando de arranque ya esta en `railway.json`:
+El comando de arranque esta en el `Dockerfile`:
 
 ```bash
-python -m streamlit run app.py --server.address 0.0.0.0 --server.port $PORT --server.headless true --browser.gatherUsageStats false
+streamlit run app.py --server.address 0.0.0.0 --server.port ${PORT:-8501}
 ```
+
+No crees una variable `PORT` manualmente. Railway la asigna solo.
 
 ## 4. Generar URL publica
 
