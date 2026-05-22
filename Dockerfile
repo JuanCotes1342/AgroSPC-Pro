@@ -26,4 +26,4 @@ EXPOSE 8080
 
 ENTRYPOINT ["/app/docker-entrypoint.sh"]
 
-CMD ["python", "-m", "streamlit", "run", "app.py", "--server.address=0.0.0.0", "--server.port=8080", "--server.headless=true", "--browser.gatherUsageStats=false"]
+CMD ["python", "railway_start.py"]

@@ -38,10 +38,10 @@ Tambien revisa `Settings > Deploy > Start Command`: debe estar vacio. Railway de
 
 Railway usara el `Dockerfile` del repositorio e instalara `requirements.txt`.
 
-El comando de arranque esta en el `Dockerfile`:
+El comando de arranque para Railway esta aislado en `railway_start.py`:
 
 ```bash
-python -m streamlit run app.py --server.address=0.0.0.0 --server.port=8080 --server.headless=true --browser.gatherUsageStats=false
+python railway_start.py
 ```
 
 El contenedor expone el puerto `8080`. Si Railway pide puerto al generar dominio, usa `8080`.
